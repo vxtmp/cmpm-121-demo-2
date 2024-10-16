@@ -12,40 +12,78 @@ title.textContent = APP_NAME;
 
 app.append (title);
 
+function addCanvas(width: number, height: number): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  app.append(canvas);
+  return canvas;
+}
 // Add a canvas to the webpage of size 256x256 pixels.
-const canvas = document.createElement("canvas");
-canvas.width = 256;
-canvas.height = 256;
-app.append(canvas);
+const canvas = addCanvas(256, 256);
 
-// Allow user to draw on canvas by registering observers for mouse events
-const ctx = canvas.getContext("2d")!; // What is the ! at the end of this line?
-// The ! at the end of this line is a non-null assertion operator. It tells TypeScript that the value is not null or undefined.
-
+// Add a drawing-changed event on the canvas and instead of drawing directly, save the user's drawing into an array of an array of points
+// Each point is an object with x and y properties
+// const points: { x: number, y: number }[] = [];
+const points: { x: number, y: number }[] = [];
+const ctx = canvas.getContext("2d")!;
 let isDrawing = false;
 canvas.addEventListener("mousedown", (e) => {
   isDrawing = true;
-  ctx.beginPath();
-  ctx.moveTo(e.offsetX, e.offsetY);
+  points.push({ x: e.offsetX, y: e.offsetY });
 });
 canvas.addEventListener("mousemove", (e) => {
   if (isDrawing) {
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
+    points.push({ x: e.offsetX, y: e.offsetY });
   }
 });
 canvas.addEventListener("mouseup", () => {
   isDrawing = false;
+  // trigger the drawing changed event
+  canvas.dispatchEvent(new Event("drawing-changed"));
 });
-canvas.addEventListener("mouseleave", () => {
-  isDrawing = false;
+
+// add the drawing changed event
+canvas.addEventListener("drawing-changed", () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  for (const point of points) {
+    ctx.lineTo(point.x, point.y);
+  }
+  ctx.stroke();
 });
+
+
+// Allow user to draw on canvas by registering observers for mouse events
+// const ctx = canvas.getContext("2d")!;
+// let isDrawing = false;
+// canvas.addEventListener("mousedown", (e) => {
+//   isDrawing = true;
+//   ctx.beginPath();
+//   ctx.moveTo(e.offsetX, e.offsetY);
+// });
+// canvas.addEventListener("mousemove", (e) => {
+//   if (isDrawing) {
+//     ctx.lineTo(e.offsetX, e.offsetY);
+//     ctx.stroke();
+//   }
+// });
+// canvas.addEventListener("mouseup", () => {
+//   isDrawing = false;
+// });
+// canvas.addEventListener("mouseleave", () => {
+//   isDrawing = false;
+// });
 
 // Add a button to clear the canvas
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
 clearButton.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // clear the array of points too
+    points.length = 0;
+    canvas.dispatchEvent(new Event("drawing-changed"));
+    
 });
 app.append(clearButton);
 
