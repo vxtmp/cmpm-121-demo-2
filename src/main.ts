@@ -53,6 +53,26 @@ class Line implements Drawable {
     }
   }
 }
+
+class Stamp implements Drawable {
+    position: Point;
+    sizeScalar: number;
+    stampString: string;
+    
+    constructor(sizeScalar: number, stampString: string, position: Point) {
+        this.sizeScalar = sizeScalar;
+        this.stampString = stampString;
+        this.position = position;
+    }
+
+    display(ctx: CanvasRenderingContext2D) {
+        // draw the string of the stamp using filltext at the position
+        ctx.fillText(this.stampString, this.position.x, this.position.y);
+    }
+    drag(x: number, y: number) {
+        this.position = {x, y};
+    }
+}
 // define a line display function in a const display = function (ctx: CanvasRenderingContext2D 
 const fnLineDisplay = function (ctx: CanvasRenderingContext2D, pointArray: Point[]) {
     ctx.beginPath();
