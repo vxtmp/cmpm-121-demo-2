@@ -17,18 +17,46 @@ interface Point {
   x: number;
   y: number;
 }
+
+interface Drawable {
+    drag(x: number, y: number): void;
+    display(ctx: CanvasRenderingContext2D): void;
+}
+
+interface Command {
+    execute(): void;
+    undo(): void;
+}
+
 // define a typescript interface for an object known as a line that has an array of points
-interface Line {
-  points: Point[];
+class Line implements Drawable {
+  points: Point[] = [];
   lineWidth: number;
+
+  constructor (lineWidth: number){
+    this.lineWidth = lineWidth;
+  }
+
+  drag(x: number, y:number){
+    this.points.push ({x, y});
+  }
   // give it a display function that will take a canvas rendering context and draw the line
-  display(ctx: CanvasRenderingContext2D, pointArray: Point[]): void;
-  drag(x: number, y:number, pointArray: Point[]): void;
+  display(ctx: CanvasRenderingContext2D){
+    ctx.lineWidth = this.lineWidth;
+    ctx.beginPath();
+    if (this.points.length > 0) {
+      ctx.moveTo(this.points[0].x, this.points[0].y);
+      for (const point of this.points) {
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.stroke();
+    }
+  }
 }
 // define a line display function in a const display = function (ctx: CanvasRenderingContext2D 
 const fnLineDisplay = function (ctx: CanvasRenderingContext2D, pointArray: Point[]) {
-  ctx.beginPath();
-  ctx.moveTo(pointArray[0].x, pointArray[0].y);
+    ctx.beginPath();
+    ctx.moveTo(pointArray[0].x, pointArray[0].y);
   for (const point of pointArray) {
     ctx.lineTo(point.x, point.y);
   }
@@ -42,10 +70,8 @@ const fnLineDrag = function (x: number, y: number, pointArray: Point[]){
 
 function redraw(ctx: CanvasRenderingContext2D, lines: Line[]) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    console.log ("DEBUG: Drawing lines");
     // loop through each line in the lines array
     for (const line of lines) {
-        console.log ("Line Width: ", line.lineWidth);
         ctx.lineWidth = line.lineWidth;                  // set the line width
         ctx.beginPath();
         ctx.moveTo(line.points[0].x, line.points[0].y); // move to the first point in the line
@@ -86,7 +112,8 @@ canvas.addEventListener("tool-moved", (e) => {
 });
 canvas.addEventListener("mousedown", (e) => {   // when mouse is pressed down
     isDrawing = true;                             // begins new line.
-    const newLine = { points: [{ x: e.offsetX, y: e.offsetY }], lineWidth: currentLineWidth, display: fnLineDisplay, drag: fnLineDrag};
+    // const newLine = { points: [{ x: e.offsetX, y: e.offsetY }], lineWidth: currentLineWidth, display: fnLineDisplay, drag: fnLineDrag};
+    const newLine = new Line(currentLineWidth);
     // push the newline
     lines.push(newLine);
     redoStack.length = 0;                          // clear the redo stack
@@ -98,7 +125,7 @@ canvas.addEventListener("mousemove", (e) => {   // when mouse moves
   canvas.dispatchEvent(new Event("tool-moved"));
   if (isDrawing) {                              // if drawing,
     // push current point to the points array in the current line
-    lines[lines.length - 1].drag(e.offsetX, e.offsetY, lines[lines.length - 1].points);
+    lines[lines.length - 1].drag(e.offsetX, e.offsetY);
     canvas.dispatchEvent(new Event("drawing-changed"));  // trigger the drawing changed event
   }
 });
