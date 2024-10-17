@@ -40,6 +40,28 @@ const fnLineDrag = function (x: number, y: number, pointArray: Point[]){
     pointArray.push({x, y});
 }
 
+function redraw(ctx: CanvasRenderingContext2D, lines: Line[]) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    console.log ("DEBUG: Drawing lines");
+    // loop through each line in the lines array
+    for (const line of lines) {
+        console.log ("Line Width: ", line.lineWidth);
+        ctx.lineWidth = line.lineWidth;                  // set the line width
+        ctx.beginPath();
+        ctx.moveTo(line.points[0].x, line.points[0].y); // move to the first point in the line
+        for (const point of line.points) {              // loop through each point in the line
+            ctx.lineTo(point.x, point.y);        // draw a line to the next point
+        }
+        ctx.stroke();
+    }
+    // draw a circle at the mouse with a radius of currentLineWidth and a stroke width of 1 and no fill
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc (currMouseX, currMouseY, currentLineWidth, 0, Math.PI * 2);
+    ctx.stroke();
+}
+
+
 function addCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -55,24 +77,30 @@ let currentLineWidth = 1;
 const lines: Line[] = [];   // draw stack. stores lines drawn by the user.
 const redoStack: Line[] = []; // added to via Undo. Stores lines undo'd by user.
 let isDrawing = false;
+let currMouseX = 0;
+let currMouseY = 0;
 
 // CANVAS EVENT LISTENERS
+canvas.addEventListener("tool-moved", (e) => {
+    redraw(ctx, lines);
+});
 canvas.addEventListener("mousedown", (e) => {   // when mouse is pressed down
-  isDrawing = true;                             // begins new line.
+    isDrawing = true;                             // begins new line.
     const newLine = { points: [{ x: e.offsetX, y: e.offsetY }], lineWidth: currentLineWidth, display: fnLineDisplay, drag: fnLineDrag};
     // push the newline
     lines.push(newLine);
     redoStack.length = 0;                          // clear the redo stack
     canvas.dispatchEvent(new Event("drawing-changed")); // trigger the drawing changed event
-
 });
 canvas.addEventListener("mousemove", (e) => {   // when mouse moves
+  currMouseX = e.offsetX;
+  currMouseY = e.offsetY;
+  canvas.dispatchEvent(new Event("tool-moved"));
   if (isDrawing) {                              // if drawing,
     // push current point to the points array in the current line
     lines[lines.length - 1].drag(e.offsetX, e.offsetY, lines[lines.length - 1].points);
     canvas.dispatchEvent(new Event("drawing-changed"));  // trigger the drawing changed event
   }
-  
 });
 canvas.addEventListener("mouseup", () => {             // when mouse is released
   isDrawing = false;                                   // stop drawing
@@ -80,19 +108,7 @@ canvas.addEventListener("mouseup", () => {             // when mouse is released
 });
 // add the drawing changed event
 canvas.addEventListener("drawing-changed", () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    console.log ("DEBUG: Drawing lines");
-    // loop through each line in the lines array
-    for (const line of lines) {
-        console.log ("Line Width: ", line.lineWidth);
-        ctx.lineWidth = line.lineWidth;                  // set the line width
-        ctx.beginPath();
-        ctx.moveTo(line.points[0].x, line.points[0].y); // move to the first point in the line
-        for (const point of line.points) {              // loop through each point in the line
-            ctx.lineTo(point.x, point.y);        // draw a line to the next point
-        }
-        ctx.stroke();
-    }
+    redraw(ctx, lines);
 });
 
 // CLEAR BUTTON
