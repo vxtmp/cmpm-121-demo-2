@@ -20,6 +20,7 @@ interface Point {
 // define a typescript interface for an object known as a line that has an array of points
 interface Line {
   points: Point[];
+  lineWidth: number;
   // give it a display function that will take a canvas rendering context and draw the line
   display(ctx: CanvasRenderingContext2D, pointArray: Point[]): void;
   drag(x: number, y:number, pointArray: Point[]): void;
@@ -37,9 +38,7 @@ const fnLineDisplay = function (ctx: CanvasRenderingContext2D, pointArray: Point
 const fnLineDrag = function (x: number, y: number, pointArray: Point[]){
     // push the x y coord to the point array
     pointArray.push({x, y});
-
 }
-
 
 function addCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
@@ -49,17 +48,18 @@ function addCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas;
 }
 
+// globals.
 const canvas = addCanvas(256, 256)!;
 const ctx = canvas.getContext("2d")!;
+let currentLineWidth = 1;
 const lines: Line[] = [];   // draw stack. stores lines drawn by the user.
 const redoStack: Line[] = []; // added to via Undo. Stores lines undo'd by user.
 let isDrawing = false;
 
-// add event listeners
+// CANVAS EVENT LISTENERS
 canvas.addEventListener("mousedown", (e) => {   // when mouse is pressed down
   isDrawing = true;                             // begins new line.
-//   lines.push([{ x: e.offsetX, y: e.offsetY }]);  // push new line with point at current mousePos (e)
-    const newLine = { points: [{ x: e.offsetX, y: e.offsetY }], display: fnLineDisplay, drag: fnLineDrag};
+    const newLine = { points: [{ x: e.offsetX, y: e.offsetY }], lineWidth: currentLineWidth, display: fnLineDisplay, drag: fnLineDrag};
     // push the newline
     lines.push(newLine);
     redoStack.length = 0;                          // clear the redo stack
@@ -78,22 +78,24 @@ canvas.addEventListener("mouseup", () => {             // when mouse is released
   isDrawing = false;                                   // stop drawing
   redoStack.length = 0;                                // clear the redo stack
 });
-
 // add the drawing changed event
 canvas.addEventListener("drawing-changed", () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.beginPath();
-  // loop through each line in the lines array
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    console.log ("DEBUG: Drawing lines");
+    // loop through each line in the lines array
     for (const line of lines) {
+        console.log ("Line Width: ", line.lineWidth);
+        ctx.lineWidth = line.lineWidth;                  // set the line width
+        ctx.beginPath();
         ctx.moveTo(line.points[0].x, line.points[0].y); // move to the first point in the line
         for (const point of line.points) {              // loop through each point in the line
             ctx.lineTo(point.x, point.y);        // draw a line to the next point
         }
+        ctx.stroke();
     }
-  ctx.stroke();
 });
 
-// Add a button to clear the canvas
+// CLEAR BUTTON
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
 clearButton.addEventListener("click", () => {
@@ -103,7 +105,7 @@ clearButton.addEventListener("click", () => {
 });
 app.append(clearButton);
 
-// Add an undo button
+// UNDO BUTTON
 const undoButton = document.createElement("button");
 undoButton.textContent = "Undo";
 undoButton.addEventListener("click", () => {            // When undo button clicked
@@ -116,7 +118,7 @@ undoButton.addEventListener("click", () => {            // When undo button clic
 });
 app.append(undoButton);                                 // Add undo button to app
 
-// Add a redo button
+// REDO BUTTON
 const redoButton = document.createElement("button");
 redoButton.textContent = "Redo";
 redoButton.addEventListener("click", () => {            // When redo button clicked
@@ -129,3 +131,26 @@ redoButton.addEventListener("click", () => {            // When redo button clic
     }
 );
 app.append(redoButton);                                 // Add redo button to app
+
+const fnThickenMarker = function () {               // function to thicken the marker
+    currentLineWidth = 5;                              // set the line width to 5
+}
+const fnThinMarker = function () {
+    currentLineWidth = 1;                              // set the line width to 1
+}
+
+// THIN MARKER BUTTON
+const thinMarkerButton = document.createElement("button");
+thinMarkerButton.textContent = "Thin Marker";
+thinMarkerButton.addEventListener("click", () => {
+    fnThinMarker();
+});
+app.append(thinMarkerButton);
+
+// THICK MARKER BUTTON
+const thickMarkerButton = document.createElement("button");
+thickMarkerButton.textContent = "Thick Marker";
+thickMarkerButton.addEventListener("click", () => {
+    fnThickenMarker();
+});
+app.append(thickMarkerButton);
