@@ -19,15 +19,112 @@ interface Point {
 }
 
 interface Drawable {
+    // draw(x: number, y: number): void;
+    // initialize a new drawable in the mousedown. call commands in mouseMove
     drag(x: number, y: number): void;
     display(ctx: CanvasRenderingContext2D): void;
 }
 
 interface Command {
     execute(): void;
-    undo(): void;
+    // undo(): void;
 }
 
+// DrawCommand (mouseDown)
+class DrawCommand implements Command {
+    private x: number;
+    private y: number;
+  
+    constructor(x: number, y: number) {
+      this.x = x;
+      this.y = y;
+    }
+  
+    execute() {
+      // create a new drawable.
+
+    }
+  
+    // undo() {
+
+    // }
+}
+
+// DragCommand (mouseDown + mouseMove)
+class DragCommand implements Command {
+    private drawable: Drawable;
+    private x: number;
+    private y: number;
+  
+    constructor(drawable: Drawable, x: number, y: number) {
+      this.drawable = drawable;
+      this.x = x;
+      this.y = y;
+    }
+  
+    execute() {
+      this.drawable.drag(this.x, this.y);
+    }
+  
+    // undo() {
+
+    // }
+}
+
+class DisplayCommand implements Command {
+    private drawable: Drawable;
+    private ctx: CanvasRenderingContext2D;
+  
+    constructor(drawable: Drawable, ctx: CanvasRenderingContext2D) {
+      this.drawable = drawable;
+      this.ctx = ctx;
+    }
+  
+    execute() {
+      this.drawable.display(this.ctx);
+    }
+  
+    // undo() {
+    //   ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // }
+}
+
+class DrawableManager {
+    private history: Drawable[] = [];
+    private redoStack: Drawable[] = [];
+  
+    addDrawable(drawable: Drawable) {
+      this.history.push(drawable);
+      this.redoStack.length = 0;
+    }
+  
+    undo() {
+      const undoThing = this.history.pop();
+      if (undoThing) {
+        this.redoStack.push(undoThing);
+      }
+    }
+  
+    redo() {
+      const redoThing = this.redoStack.pop();
+      if (redoThing) {
+        this.history.push(redoThing);
+      }
+    }
+    
+    redraw(ctx: CanvasRenderingContext2D) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // loop through each drawable in history
+        for (const drawThing of this.history) {
+            drawThing.display(ctx);
+        }
+        // draw a circle at the mouse with a radius of currentLineWidth and a stroke width of 1 and no fill
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc (currMouseX, currMouseY, currentLineWidth, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+}
 // define a typescript interface for an object known as a line that has an array of points
 class Line implements Drawable {
   points: Point[] = [];
@@ -52,6 +149,21 @@ class Line implements Drawable {
       ctx.stroke();
     }
   }
+  draw(x: number, y: number): void {
+    
+    // what does this line do?
+    this.points.push({x, y}); 
+
+  }
+}
+
+class Clear implements Drawable {
+    display(ctx: CanvasRenderingContext2D) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    drag(x: number, y: number) {
+        // do nothing
+    }
 }
 
 class Stamp implements Drawable {
@@ -73,39 +185,7 @@ class Stamp implements Drawable {
         this.position = {x, y};
     }
 }
-// define a line display function in a const display = function (ctx: CanvasRenderingContext2D 
-const fnLineDisplay = function (ctx: CanvasRenderingContext2D, pointArray: Point[]) {
-    ctx.beginPath();
-    ctx.moveTo(pointArray[0].x, pointArray[0].y);
-  for (const point of pointArray) {
-    ctx.lineTo(point.x, point.y);
-  }
-  ctx.stroke();
-};
 
-const fnLineDrag = function (x: number, y: number, pointArray: Point[]){
-    // push the x y coord to the point array
-    pointArray.push({x, y});
-}
-
-function redraw(ctx: CanvasRenderingContext2D, lines: Line[]) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // loop through each line in the lines array
-    for (const line of lines) {
-        ctx.lineWidth = line.lineWidth;                  // set the line width
-        ctx.beginPath();
-        ctx.moveTo(line.points[0].x, line.points[0].y); // move to the first point in the line
-        for (const point of line.points) {              // loop through each point in the line
-            ctx.lineTo(point.x, point.y);        // draw a line to the next point
-        }
-        ctx.stroke();
-    }
-    // draw a circle at the mouse with a radius of currentLineWidth and a stroke width of 1 and no fill
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc (currMouseX, currMouseY, currentLineWidth, 0, Math.PI * 2);
-    ctx.stroke();
-}
 
 
 function addCanvas(width: number, height: number): HTMLCanvasElement {
@@ -120,23 +200,20 @@ function addCanvas(width: number, height: number): HTMLCanvasElement {
 const canvas = addCanvas(256, 256)!;
 const ctx = canvas.getContext("2d")!;
 let currentLineWidth = 1;
-const lines: Line[] = [];   // draw stack. stores lines drawn by the user.
-const redoStack: Line[] = []; // added to via Undo. Stores lines undo'd by user.
+let currLineBuffer: Line;
 let isDrawing = false;
 let currMouseX = 0;
 let currMouseY = 0;
+const drawManager = new DrawableManager();
 
 // CANVAS EVENT LISTENERS
 canvas.addEventListener("tool-moved", (e) => {
-    redraw(ctx, lines);
+    drawManager.redraw(ctx);
 });
 canvas.addEventListener("mousedown", (e) => {   // when mouse is pressed down
     isDrawing = true;                             // begins new line.
-    // const newLine = { points: [{ x: e.offsetX, y: e.offsetY }], lineWidth: currentLineWidth, display: fnLineDisplay, drag: fnLineDrag};
-    const newLine = new Line(currentLineWidth);
-    // push the newline
-    lines.push(newLine);
-    redoStack.length = 0;                          // clear the redo stack
+    currLineBuffer = new Line(currentLineWidth);  // create a new line));
+    drawManager.addDrawable(currLineBuffer);      // add the line to the draw stack
     canvas.dispatchEvent(new Event("drawing-changed")); // trigger the drawing changed event
 });
 canvas.addEventListener("mousemove", (e) => {   // when mouse moves
@@ -144,18 +221,19 @@ canvas.addEventListener("mousemove", (e) => {   // when mouse moves
   currMouseY = e.offsetY;
   canvas.dispatchEvent(new Event("tool-moved"));
   if (isDrawing) {                              // if drawing,
-    // push current point to the points array in the current line
-    lines[lines.length - 1].drag(e.offsetX, e.offsetY);
-    canvas.dispatchEvent(new Event("drawing-changed"));  // trigger the drawing changed event
+    // create a new command event to drag the line
+    const command = new DragCommand(currLineBuffer, e.offsetX, e.offsetY);
+    command.execute();
+    // trigger drawing-changed which will create a display command
+    canvas.dispatchEvent(new Event("drawing-changed"));
   }
 });
 canvas.addEventListener("mouseup", () => {             // when mouse is released
   isDrawing = false;                                   // stop drawing
-  redoStack.length = 0;                                // clear the redo stack
 });
 // add the drawing changed event
 canvas.addEventListener("drawing-changed", () => {
-    redraw(ctx, lines);
+    drawManager.redraw(ctx);
 });
 
 // CLEAR BUTTON
@@ -163,57 +241,48 @@ const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
 clearButton.addEventListener("click", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    lines.length = 0;                                       // clear the array of lines too
+    drawManager.addDrawable(new Clear());
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
-app.append(clearButton);
 
 // UNDO BUTTON
 const undoButton = document.createElement("button");
 undoButton.textContent = "Undo";
 undoButton.addEventListener("click", () => {            // When undo button clicked
-    if (lines.length === 0) {                           // If there are no lines to undo, return
-        return;
-    }
-    redoStack.push(lines[lines.length - 1]);            // Add the last line to the redo stack
-    lines.length = lines.length - 1;                    // Remove the last line from the lines array
-  canvas.dispatchEvent(new Event("drawing-changed"));
+    drawManager.undo();
+    canvas.dispatchEvent(new Event("drawing-changed"));
 });
-app.append(undoButton);                                 // Add undo button to app
+
 
 // REDO BUTTON
 const redoButton = document.createElement("button");
 redoButton.textContent = "Redo";
 redoButton.addEventListener("click", () => {            // When redo button clicked
-    if (redoStack.length === 0) {                       // if stack empty, return.
-        return;
-    }
-    lines.push(redoStack[redoStack.length - 1]);        // Add line from redo stack to lines array
-    redoStack.length = redoStack.length - 1;            // Remove line from redo stack
-    canvas.dispatchEvent(new Event("drawing-changed")); // trigger drawing changed event.
-    }
-);
-app.append(redoButton);                                 // Add redo button to app
+    drawManager.redo();
+    canvas.dispatchEvent(new Event("drawing-changed"));
+});
 
-const fnThickenMarker = function () {               // function to thicken the marker
-    currentLineWidth = 5;                              // set the line width to 5
-}
-const fnThinMarker = function () {
-    currentLineWidth = 1;                              // set the line width to 1
+const fnSetSize = function (size: number) {               // function to thicken the marker
+    currentLineWidth = size;                              // set the line width to 5
 }
 
 // THIN MARKER BUTTON
 const thinMarkerButton = document.createElement("button");
-thinMarkerButton.textContent = "Thin Marker";
+thinMarkerButton.textContent = "Thin Marker (size 1)";
 thinMarkerButton.addEventListener("click", () => {
-    fnThinMarker();
+    fnSetSize(1);
 });
-app.append(thinMarkerButton);
 
 // THICK MARKER BUTTON
 const thickMarkerButton = document.createElement("button");
-thickMarkerButton.textContent = "Thick Marker";
+thickMarkerButton.textContent = "Thick Marker (size 5)";
 thickMarkerButton.addEventListener("click", () => {
-    fnThickenMarker();
+    fnSetSize(5);
 });
+
+// add the buttons to the app
+app.append(clearButton);
+app.append(undoButton);                                 // Add undo button to app
+app.append(redoButton);                                 // Add redo button to app
+app.append(thinMarkerButton);
 app.append(thickMarkerButton);
