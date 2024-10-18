@@ -71,22 +71,36 @@ class DragCommand implements Command {
     // }
 }
 
-class DisplayCommand implements Command {
-    private drawable: Drawable;
-    private ctx: CanvasRenderingContext2D;
-  
-    constructor(drawable: Drawable, ctx: CanvasRenderingContext2D) {
-      this.drawable = drawable;
-      this.ctx = ctx;
+class PreviewLineCommand implements Command{
+    private r: number;
+
+    constructor(r: number){
+        this.r = r;
     }
-  
-    execute() {
-      this.drawable.display(this.ctx);
+
+    execute(){
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(currMouseX, currMouseY, this.r, 0, Math.PI * 2);
+        ctx.stroke();
     }
-  
-    // undo() {
-    //   ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // }
+}
+
+class PreviewStampCommand implements Command{
+    private size: number;
+    private rotation: number;
+    private stampString: string;
+
+    constructor(size: number, rotation: number, stampString: string){
+        this.size = size;
+        this.rotation = rotation;
+        this.stampString = stampString;
+    }
+
+    execute(){
+        ctx.font = `${this.size}px Arial`;
+        ctx.fillText(this.stampString, currMouseX, currMouseY);
+    }
 }
 
 class DrawableManager {
@@ -118,13 +132,14 @@ class DrawableManager {
         for (const drawThing of this.history) {
             drawThing.display(ctx);
         }
-        // draw a circle at the mouse with a radius of currentLineWidth and a stroke width of 1 and no fill
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc (currMouseX, currMouseY, currentLineWidth, 0, Math.PI * 2);
-        ctx.stroke();
+        // create a preview event for the current drawable
+        if (currToolPreview){
+            currToolPreview.execute();
+        }
+            // currDrawableBuffer.preview(ctx, currMouseX, currMouseY);
     }
 }
+
 // define a typescript interface for an object known as a line that has an array of points
 class Line implements Drawable {
   points: Point[] = [];
@@ -150,9 +165,15 @@ class Line implements Drawable {
     }
   }
   draw(x: number, y: number): void {
-    
-    // what does this line do?
     this.points.push({x, y}); 
+  }
+  preview(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+    // draw a lineWidth radius circle around cursor)
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x, y, this.lineWidth, 0
+    , Math.PI * 2);
+    ctx.stroke();
 
   }
 }
@@ -163,6 +184,10 @@ class Clear implements Drawable {
     }
     drag(x: number, y: number) {
         // do nothing
+    }
+    preview(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+        // do nothing
+
     }
 }
 
@@ -184,6 +209,9 @@ class Stamp implements Drawable {
     drag(x: number, y: number) {
         this.position = {x, y};
     }
+    preview(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+        ctx.fillText(this.stampString, x, y);
+    }
 }
 
 
@@ -200,7 +228,8 @@ function addCanvas(width: number, height: number): HTMLCanvasElement {
 const canvas = addCanvas(256, 256)!;
 const ctx = canvas.getContext("2d")!;
 let currentLineWidth = 1;
-let currLineBuffer: Line;
+let currDrawableBuffer: Drawable = new Line(currentLineWidth);
+let currToolPreview: Command | null = null;
 let isDrawing = false;
 let currMouseX = 0;
 let currMouseY = 0;
@@ -212,8 +241,10 @@ canvas.addEventListener("tool-moved", (e) => {
 });
 canvas.addEventListener("mousedown", (e) => {   // when mouse is pressed down
     isDrawing = true;                             // begins new line.
-    currLineBuffer = new Line(currentLineWidth);  // create a new line));
-    drawManager.addDrawable(currLineBuffer);      // add the line to the draw stack
+    // drawManager.addDrawable(currDrawableBuffer);      // add the line to the draw stack
+    // add the line to the draw stack
+    currDrawableBuffer = new Line(currentLineWidth);
+    drawManager.addDrawable(currDrawableBuffer);
     canvas.dispatchEvent(new Event("drawing-changed")); // trigger the drawing changed event
 });
 canvas.addEventListener("mousemove", (e) => {   // when mouse moves
@@ -222,7 +253,7 @@ canvas.addEventListener("mousemove", (e) => {   // when mouse moves
   canvas.dispatchEvent(new Event("tool-moved"));
   if (isDrawing) {                              // if drawing,
     // create a new command event to drag the line
-    const command = new DragCommand(currLineBuffer, e.offsetX, e.offsetY);
+    const command = new DragCommand(currDrawableBuffer, e.offsetX, e.offsetY);
     command.execute();
     // trigger drawing-changed which will create a display command
     canvas.dispatchEvent(new Event("drawing-changed"));
@@ -270,14 +301,20 @@ const fnSetSize = function (size: number) {               // function to thicken
 const thinMarkerButton = document.createElement("button");
 thinMarkerButton.textContent = "Thin Marker (size 1)";
 thinMarkerButton.addEventListener("click", () => {
+    console.log ("Thin marker clicked");
     fnSetSize(1);
+    currDrawableBuffer = new Line(currentLineWidth)!;
+    currToolPreview = new PreviewLineCommand(currentLineWidth, currMouseX, currMouseY);
 });
 
 // THICK MARKER BUTTON
 const thickMarkerButton = document.createElement("button");
 thickMarkerButton.textContent = "Thick Marker (size 5)";
 thickMarkerButton.addEventListener("click", () => {
+    console.log ("Thick marker clicked");   
     fnSetSize(5);
+    currDrawableBuffer = new Line(currentLineWidth)!;
+    currToolPreview = new PreviewLineCommand(currentLineWidth, currMouseX, currMouseY);
 });
 
 // add the buttons to the app
