@@ -136,7 +136,6 @@ class DrawableManager {
         if (currToolPreview){
             currToolPreview.execute();
         }
-            // currDrawableBuffer.preview(ctx, currMouseX, currMouseY);
     }
 }
 
@@ -167,15 +166,6 @@ class Line implements Drawable {
   draw(x: number, y: number): void {
     this.points.push({x, y}); 
   }
-  preview(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    // draw a lineWidth radius circle around cursor)
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(x, y, this.lineWidth, 0
-    , Math.PI * 2);
-    ctx.stroke();
-
-  }
 }
 
 class Clear implements Drawable {
@@ -184,10 +174,6 @@ class Clear implements Drawable {
     }
     drag(x: number, y: number) {
         // do nothing
-    }
-    preview(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-        // do nothing
-
     }
 }
 
@@ -208,9 +194,6 @@ class Stamp implements Drawable {
     }
     drag(x: number, y: number) {
         this.position = {x, y};
-    }
-    preview(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-        ctx.fillText(this.stampString, x, y);
     }
 }
 
@@ -303,8 +286,8 @@ thinMarkerButton.textContent = "Thin Marker (size 1)";
 thinMarkerButton.addEventListener("click", () => {
     console.log ("Thin marker clicked");
     fnSetSize(1);
-    currDrawableBuffer = new Line(currentLineWidth)!;
-    currToolPreview = new PreviewLineCommand(currentLineWidth, currMouseX, currMouseY);
+    currDrawableBuffer = new Line(currentLineWidth)!;   // gets added to the history stack later.
+    currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
 });
 
 // THICK MARKER BUTTON
@@ -313,8 +296,8 @@ thickMarkerButton.textContent = "Thick Marker (size 5)";
 thickMarkerButton.addEventListener("click", () => {
     console.log ("Thick marker clicked");   
     fnSetSize(5);
-    currDrawableBuffer = new Line(currentLineWidth)!;
-    currToolPreview = new PreviewLineCommand(currentLineWidth, currMouseX, currMouseY);
+    currDrawableBuffer = new Line(currentLineWidth)!; // gets added to history stack later
+    currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
 });
 
 // add the buttons to the app
