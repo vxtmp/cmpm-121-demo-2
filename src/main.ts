@@ -133,7 +133,7 @@ class DrawableManager {
             drawThing.draw(ctx);
         }
         // create a preview event for the current drawable
-        if (currToolPreview){
+        if (currToolPreview && isDrawing == false){
             currToolPreview.execute();
         }
     }
