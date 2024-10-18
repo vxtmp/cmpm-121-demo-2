@@ -22,7 +22,7 @@ interface Drawable {
     // draw(x: number, y: number): void;
     // initialize a new drawable in the mousedown. call commands in mouseMove
     drag(x: number, y: number): void;
-    display(ctx: CanvasRenderingContext2D): void;
+    draw(ctx: CanvasRenderingContext2D): void;
 }
 
 interface Command {
@@ -130,7 +130,7 @@ class DrawableManager {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         // loop through each drawable in history
         for (const drawThing of this.history) {
-            drawThing.display(ctx);
+            drawThing.draw(ctx);
         }
         // create a preview event for the current drawable
         if (currToolPreview){
@@ -152,7 +152,7 @@ class Line implements Drawable {
     this.points.push ({x, y});
   }
   // give it a display function that will take a canvas rendering context and draw the line
-  display(ctx: CanvasRenderingContext2D){
+  draw(ctx: CanvasRenderingContext2D){
     ctx.lineWidth = this.lineWidth;
     ctx.beginPath();
     if (this.points.length > 0) {
@@ -163,13 +163,10 @@ class Line implements Drawable {
       ctx.stroke();
     }
   }
-  draw(x: number, y: number): void {
-    this.points.push({x, y}); 
-  }
 }
 
 class Clear implements Drawable {
-    display(ctx: CanvasRenderingContext2D) {
+    draw(ctx: CanvasRenderingContext2D) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     drag(x: number, y: number) {
@@ -188,7 +185,7 @@ class Stamp implements Drawable {
         this.position = position;
     }
 
-    display(ctx: CanvasRenderingContext2D) {
+    draw(ctx: CanvasRenderingContext2D) {
         // draw the string of the stamp using filltext at the position
         ctx.fillText(this.stampString, this.position.x, this.position.y);
     }
