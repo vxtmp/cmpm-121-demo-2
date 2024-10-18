@@ -65,10 +65,6 @@ class DragCommand implements Command {
     execute() {
       this.drawable.drag(this.x, this.y);
     }
-  
-    // undo() {
-
-    // }
 }
 
 class PreviewLineCommand implements Command{
@@ -99,7 +95,9 @@ class PreviewStampCommand implements Command{
 
     execute(){
         ctx.font = `${this.size}px Arial`;
-        ctx.fillText(this.stampString, currMouseX, currMouseY);
+        // stamp the stamp offset by half the size
+        ctx.fillText(this.stampString, currMouseX - this.size / 2
+            , currMouseY + this.size / 2);
     }
 }
 
@@ -186,8 +184,10 @@ class Stamp implements Drawable {
     }
 
     draw(ctx: CanvasRenderingContext2D) {
-        // draw the string of the stamp using filltext at the position
-        ctx.fillText(this.stampString, this.position.x, this.position.y);
+        // draw the string of the stamp using filltext at the position offset by half the size
+        ctx.font = `${this.sizeScalar}px Arial`;
+        ctx.fillText(this.stampString, this.position.x - this.sizeScalar / 2, this.position.y + this.sizeScalar / 2);
+        // ctx.fillText(this.stampString, this.position.x, this.position.y);
     }
     drag(x: number, y: number) {
         this.position = {x, y};
@@ -209,6 +209,7 @@ const canvas = addCanvas(256, 256)!;
 const ctx = canvas.getContext("2d")!;
 let currentLineWidth = 1;
 let currDrawableBuffer: Drawable = new Line(currentLineWidth);
+let currTool: { type: string, size: number, symbol?: string } | null = null;
 let currToolPreview: Command | null = null;
 let isDrawing = false;
 let currMouseX = 0;
@@ -223,7 +224,15 @@ canvas.addEventListener("mousedown", (e) => {   // when mouse is pressed down
     isDrawing = true;                             // begins new line.
     // drawManager.addDrawable(currDrawableBuffer);      // add the line to the draw stack
     // add the line to the draw stack
-    currDrawableBuffer = new Line(currentLineWidth);
+    // currDrawableBuffer = new Line(currentLineWidth);
+    // create new drawable depending on currTool and set currDrawableBuffer equal to it
+    if (currTool) {
+        if (currTool.type === "line") {
+            currDrawableBuffer = new Line(currentLineWidth);
+        } else if (currTool.type === "stamp") {
+            currDrawableBuffer = new Stamp(currTool.size, currTool.symbol!, {x: currMouseX, y: currMouseY});
+        }
+    }
     drawManager.addDrawable(currDrawableBuffer);
     canvas.dispatchEvent(new Event("drawing-changed")); // trigger the drawing changed event
 });
@@ -281,9 +290,8 @@ const fnSetSize = function (size: number) {               // function to thicken
 const thinMarkerButton = document.createElement("button");
 thinMarkerButton.textContent = "Thin Marker (size 1)";
 thinMarkerButton.addEventListener("click", () => {
-    console.log ("Thin marker clicked");
     fnSetSize(1);
-    currDrawableBuffer = new Line(currentLineWidth)!;   // gets added to the history stack later.
+    currTool = { type: "line", size: currentLineWidth };
     currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
 });
 
@@ -291,10 +299,33 @@ thinMarkerButton.addEventListener("click", () => {
 const thickMarkerButton = document.createElement("button");
 thickMarkerButton.textContent = "Thick Marker (size 5)";
 thickMarkerButton.addEventListener("click", () => {
-    console.log ("Thick marker clicked");   
     fnSetSize(5);
-    currDrawableBuffer = new Line(currentLineWidth)!; // gets added to history stack later
+    currTool = { type: "line", size: currentLineWidth };
     currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
+});
+
+// EMOJI STAMP #1 BUTTON
+const emojiStampButton = document.createElement("button");
+emojiStampButton.textContent = "Emoji Stamp #1";
+emojiStampButton.addEventListener("click", () => {
+    currTool = { type: "stamp", size: 50, symbol: "😀" };
+    currToolPreview = new PreviewStampCommand(50, 0, "😀");
+});
+
+// EMOJI STAMP #2 BUTTON
+const emojiStampButton2 = document.createElement("button");
+emojiStampButton2.textContent = "Emoji Stamp #2";
+emojiStampButton2.addEventListener("click", () => {
+    currTool = { type: "stamp", size: 50, symbol: "😎" };
+    currToolPreview = new PreviewStampCommand(50, 0, "😎");
+});
+
+// EMOJI STAMP #3 BUTTON
+const emojiStampButton3 = document.createElement("button");
+emojiStampButton3.textContent = "Emoji Stamp #3";
+emojiStampButton3.addEventListener("click", () => {
+    currTool = { type: "stamp", size: 50, symbol: "🤣" };
+    currToolPreview = new PreviewStampCommand(50, 0, "🤣");
 });
 
 // add the buttons to the app
@@ -303,3 +334,7 @@ app.append(undoButton);                                 // Add undo button to ap
 app.append(redoButton);                                 // Add redo button to app
 app.append(thinMarkerButton);
 app.append(thickMarkerButton);
+app.append(emojiStampButton);
+app.append(emojiStampButton2);
+app.append(emojiStampButton3);
+
