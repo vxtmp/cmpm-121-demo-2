@@ -30,25 +30,25 @@ interface Command {
     // undo(): void;
 }
 
-// DrawCommand (mouseDown)
-class DrawCommand implements Command {
-    private x: number;
-    private y: number;
+// // DrawCommand (mouseDown)
+// class DrawCommand implements Command {
+//     private x: number;
+//     private y: number;
   
-    constructor(x: number, y: number) {
-      this.x = x;
-      this.y = y;
-    }
+//     constructor(x: number, y: number) {
+//       this.x = x;
+//       this.y = y;
+//     }
   
-    execute() {
-      // create a new drawable.
+//     execute() {
+//       // create a new drawable.
 
-    }
+//     }
   
-    // undo() {
+//     // undo() {
 
-    // }
-}
+//     // }
+// }
 
 // DragCommand (mouseDown + mouseMove)
 class DragCommand implements Command {
@@ -126,18 +126,15 @@ class DrawableManager {
     
     redraw(ctx: CanvasRenderingContext2D) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // loop through each drawable in history
         for (const drawThing of this.history) {
             drawThing.draw(ctx);
         }
-        // create a preview event for the current drawable
         if (currToolPreview && isDrawing == false){
             currToolPreview.execute();
         }
     }
 }
 
-// define a typescript interface for an object known as a line that has an array of points
 class Line implements Drawable {
   points: Point[] = [];
   lineWidth: number;
@@ -149,7 +146,7 @@ class Line implements Drawable {
   drag(x: number, y:number){
     this.points.push ({x, y});
   }
-  // give it a display function that will take a canvas rendering context and draw the line
+
   draw(ctx: CanvasRenderingContext2D){
     ctx.lineWidth = this.lineWidth;
     ctx.beginPath();
@@ -215,6 +212,8 @@ let isDrawing = false;
 let currMouseX = 0;
 let currMouseY = 0;
 const drawManager = new DrawableManager();
+
+let stampsArray: string[] = ["🤪", "😎", "🤣"];
 
 // CANVAS EVENT LISTENERS
 canvas.addEventListener("tool-moved", (e) => {
@@ -304,37 +303,29 @@ thickMarkerButton.addEventListener("click", () => {
     currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
 });
 
-// EMOJI STAMP #1 BUTTON
-const emojiStampButton = document.createElement("button");
-emojiStampButton.textContent = "Emoji Stamp #1";
-emojiStampButton.addEventListener("click", () => {
-    currTool = { type: "stamp", size: 50, symbol: "😀" };
-    currToolPreview = new PreviewStampCommand(50, 0, "😀");
-});
+function createEmojiStampButton(emoji: string){
+    const emojiStampButton = document.createElement("button");
+    emojiStampButton.textContent = emoji;
+    emojiStampButton.addEventListener("click", () => {
+        currTool = { type: "stamp", size: 50, symbol: emoji };
+        currToolPreview = new PreviewStampCommand(50, 0, emoji);
+    });
+    return emojiStampButton;
+}
 
-// EMOJI STAMP #2 BUTTON
-const emojiStampButton2 = document.createElement("button");
-emojiStampButton2.textContent = "Emoji Stamp #2";
-emojiStampButton2.addEventListener("click", () => {
-    currTool = { type: "stamp", size: 50, symbol: "😎" };
-    currToolPreview = new PreviewStampCommand(50, 0, "😎");
-});
-
-// EMOJI STAMP #3 BUTTON
-const emojiStampButton3 = document.createElement("button");
-emojiStampButton3.textContent = "Emoji Stamp #3";
-emojiStampButton3.addEventListener("click", () => {
-    currTool = { type: "stamp", size: 50, symbol: "🤣" };
-    currToolPreview = new PreviewStampCommand(50, 0, "🤣");
-});
-
-// add the buttons to the app
+// append buttons to the app
+app.append(document.createElement("br"));
 app.append(clearButton);
-app.append(undoButton);                                 // Add undo button to app
-app.append(redoButton);                                 // Add redo button to app
+app.append(undoButton);             
+app.append(redoButton);                  
+
+app.append(document.createElement("br")); 
 app.append(thinMarkerButton);
 app.append(thickMarkerButton);
-app.append(emojiStampButton);
-app.append(emojiStampButton2);
-app.append(emojiStampButton3);
+
+app.append(document.createElement("br"));
+stampsArray.forEach((emoji) => {
+    app.append(createEmojiStampButton(emoji));
+  }
+);
 
