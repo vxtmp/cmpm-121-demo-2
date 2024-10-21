@@ -321,9 +321,7 @@ app.append(thickMarkerButton);
 
 app.append(document.createElement("br"));
 // add the stamp create button
-const createCustomStampButton = document.createElement("button");
-createCustomStampButton.textContent = "Create Stamp";
-createCustomStampButton.addEventListener("click", () => {
+const createCustomStampButton = createButtonWithText("Create Stamp", () => {
     const customStamp = prompt("Enter a custom stamp:");
     if (customStamp) {
         stampsArray.push(customStamp);
@@ -337,6 +335,23 @@ stampsArray.forEach((emoji) => {
     app.append(createEmojiStampButton(emoji));
   }
 );
+
+app.append(document.createElement("br"));
+// create an export button that creates a 1024x1024 canvas temporarily
+const exportButton = createButtonWithText("Export", () => {
+    const exportCanvas = addCanvas(1024, 1024);
+    const exportCtx = exportCanvas.getContext("2d")!;
+    // scale the drawing size by 4x so that existing commands appear at 4x size
+    exportCtx.scale(4, 4);
+    drawManager.redraw(exportCtx);
+    const dataUrl = exportCanvas.toDataURL();
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "sketch.png";
+    a.click();
+    exportCanvas.remove();
+});
+app.append(exportButton);
 
 fnSetSize(1);
 currTool = { type: "line", size: currentLineWidth };
