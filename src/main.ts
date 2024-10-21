@@ -290,12 +290,26 @@ const undoButton = createButtonWithText("Undo", () => {            // When undo 
     drawManager.undo();
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
+// let's make ctrl z trigger undo as well
+document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "z") {
+        drawManager.undo();
+        canvas.dispatchEvent(new Event("drawing-changed"));
+    }
+});
 
 
 // REDO BUTTON
 const redoButton = createButtonWithText("Redo", () => {            // When redo button clicked
     drawManager.redo();
     canvas.dispatchEvent(new Event("drawing-changed"));
+});
+// let's make ctrl y trigger redo as well
+document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "y") {
+        drawManager.redo();
+        canvas.dispatchEvent(new Event("drawing-changed"));
+    }
 });
 
 const fnSetSize = function (size: number) {               // function to thicken the marker
