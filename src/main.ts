@@ -138,9 +138,11 @@ class DrawableManager {
 class Line implements Drawable {
   points: Point[] = [];
   lineWidth: number;
+  opacity: number = 1;
 
-  constructor (lineWidth: number){
+  constructor (lineWidth: number, opacity: number){
     this.lineWidth = lineWidth;
+    this.opacity = opacity;
   }
 
   drag(x: number, y:number){
@@ -149,6 +151,8 @@ class Line implements Drawable {
 
   draw(ctx: CanvasRenderingContext2D){
     ctx.lineWidth = this.lineWidth;
+    // set the opacity for just this line
+    ctx.globalAlpha = this.opacity;
     ctx.beginPath();
     if (this.points.length > 0) {
       ctx.moveTo(this.points[0].x, this.points[0].y);
@@ -208,7 +212,8 @@ const SAVE_SCALE = 2;
 const canvas = addCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)!;
 const ctx = canvas.getContext("2d")!;
 let currentLineWidth = 1;
-let currDrawableBuffer: Drawable = new Line(currentLineWidth);
+let currentOpacity = 1;
+let currDrawableBuffer: Drawable = new Line(currentLineWidth, currentOpacity);
 let currTool: { type: string, size: number, symbol?: string } | null = null;
 let currToolPreview: Command | null = null;
 let isDrawing = false;
@@ -230,7 +235,7 @@ canvas.addEventListener("mousedown", (e) => {   // when mouse is pressed down
     // create new drawable depending on currTool and set currDrawableBuffer equal to it
     if (currTool) {
         if (currTool.type === "line") {
-            currDrawableBuffer = new Line(currentLineWidth);
+            currDrawableBuffer = new Line(currentLineWidth, currentOpacity);
         } else if (currTool.type === "stamp") {
             currDrawableBuffer = new Stamp(currTool.size, currTool.symbol!, {x: currMouseX, y: currMouseY});
         }
@@ -290,17 +295,36 @@ const fnSetSize = function (size: number) {               // function to thicken
 }
 
 // THIN MARKER BUTTON
-const thinMarkerButton = createButtonWithText("Thin Marker (size 1)", () => {
-    fnSetSize(1);
+app.append(document.createElement("br"));
+const thinMarkerButton = createButtonWithText("Marker", () => {
+    // fnSetSize(1);
     currTool = { type: "line", size: currentLineWidth };
     currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
 });
 
-// THICK MARKER BUTTON
-const thickMarkerButton = createButtonWithText("Thick Marker (size 5)", () => {
-    fnSetSize(5);
+// create a slider to change the size of the marker
+const markerSizeSlider = document.createElement("input");
+markerSizeSlider.type = "range";
+markerSizeSlider.min = "1";
+markerSizeSlider.max = "50";
+markerSizeSlider.value = "1";
+markerSizeSlider.step = "1";
+markerSizeSlider.addEventListener("input", () => {
+    fnSetSize(parseInt(markerSizeSlider.value));
     currTool = { type: "line", size: currentLineWidth };
-    currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
+    currToolPreview = new PreviewLineCommand(currentLineWidth);
+});
+
+// create a slider to change the opacity of the marker
+const markerOpacitySlider = document.createElement("input");
+markerOpacitySlider.type = "range";
+markerOpacitySlider.min = "0";
+markerOpacitySlider.max = "1";
+markerOpacitySlider.value = "1";
+markerOpacitySlider.step = "0.1";
+markerOpacitySlider.addEventListener("input", () => {
+    // ctx.globalAlpha = parseFloat(markerOpacitySlider.value);
+    currentOpacity = parseFloat(markerOpacitySlider.value);
 });
 
 // Function to create an emoji stamp button.
@@ -336,7 +360,15 @@ app.append(exportButton);
 
 app.append(document.createElement("br")); 
 app.append(thinMarkerButton);
-app.append(thickMarkerButton);
+// add a label for size slider
+app.append(document.createElement("br"));
+app.append(document.createTextNode("Marker Size:"));
+app.append(markerSizeSlider);
+app.append(document.createElement("br"));
+// add a label for opacity slider
+app.append(document.createTextNode("Marker Opacity:"));
+app.append(markerOpacitySlider);
+
 
 app.append(document.createElement("br"));
 // add the stamp create button
