@@ -126,6 +126,8 @@ class DrawableManager {
     
     redraw(ctx: CanvasRenderingContext2D) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         for (const drawThing of this.history) {
             drawThing.draw(ctx);
         }
@@ -167,6 +169,8 @@ class Line implements Drawable {
 class Clear implements Drawable {
     draw(ctx: CanvasRenderingContext2D) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     drag(x: number, y: number) {
         // do nothing
@@ -211,6 +215,8 @@ const CANVAS_HEIGHT = 400;
 const SAVE_SCALE = 2;
 const canvas = addCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)!;
 const ctx = canvas.getContext("2d")!;
+ctx.fillStyle = "white";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
 let currentLineWidth = 1;
 let currentOpacity = 1;
 let currDrawableBuffer: Drawable = new Line(currentLineWidth, currentOpacity);
@@ -273,6 +279,8 @@ function createButtonWithText(text: string, onClick: () => void) {
 // CLEAR BUTTON
 const clearButton = createButtonWithText("Clear", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     drawManager.addDrawable(new Clear());
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
@@ -346,8 +354,9 @@ app.append(redoButton);
 const exportButton = createButtonWithText("Export", () => {
     const exportCanvas = addCanvas(CANVAS_WIDTH * SAVE_SCALE, CANVAS_HEIGHT * SAVE_SCALE);
     const exportCtx = exportCanvas.getContext("2d")!;
-    // scale the drawing size
     exportCtx.scale(SAVE_SCALE, SAVE_SCALE);
+    exportCtx.fillStyle = "white";
+    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
     drawManager.redraw(exportCtx);
     const dataUrl = exportCanvas.toDataURL();
     const a = document.createElement("a");
