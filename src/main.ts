@@ -212,8 +212,8 @@ let isDrawing = false;
 let currMouseX = 0;
 let currMouseY = 0;
 const drawManager = new DrawableManager();
-
-let stampsArray: string[] = ["🤪", "😎", "🤣"];
+const INITIAL_STICKERS: string[] = ["🤪", "😎", "🤣"];
+const stampsArray: string[] = [...INITIAL_STICKERS];
 
 // CANVAS EVENT LISTENERS
 canvas.addEventListener("tool-moved", (e) => {
@@ -255,28 +255,29 @@ canvas.addEventListener("drawing-changed", () => {
     drawManager.redraw(ctx);
 });
 
+function createButtonWithText(text: string, onClick: () => void) {
+  const button = document.createElement("button");
+  button.textContent = text;
+  button.addEventListener("click", onClick);
+  return button;
+}
+
 // CLEAR BUTTON
-const clearButton = document.createElement("button");
-clearButton.textContent = "Clear";
-clearButton.addEventListener("click", () => {
+const clearButton = createButtonWithText("Clear", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawManager.addDrawable(new Clear());
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 // UNDO BUTTON
-const undoButton = document.createElement("button");
-undoButton.textContent = "Undo";
-undoButton.addEventListener("click", () => {            // When undo button clicked
+const undoButton = createButtonWithText("Undo", () => {            // When undo button clicked
     drawManager.undo();
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 
 // REDO BUTTON
-const redoButton = document.createElement("button");
-redoButton.textContent = "Redo";
-redoButton.addEventListener("click", () => {            // When redo button clicked
+const redoButton = createButtonWithText("Redo", () => {            // When redo button clicked
     drawManager.redo();
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
@@ -286,27 +287,22 @@ const fnSetSize = function (size: number) {               // function to thicken
 }
 
 // THIN MARKER BUTTON
-const thinMarkerButton = document.createElement("button");
-thinMarkerButton.textContent = "Thin Marker (size 1)";
-thinMarkerButton.addEventListener("click", () => {
+const thinMarkerButton = createButtonWithText("Thin Marker (size 1)", () => {
     fnSetSize(1);
     currTool = { type: "line", size: currentLineWidth };
     currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
 });
 
 // THICK MARKER BUTTON
-const thickMarkerButton = document.createElement("button");
-thickMarkerButton.textContent = "Thick Marker (size 5)";
-thickMarkerButton.addEventListener("click", () => {
+const thickMarkerButton = createButtonWithText("Thick Marker (size 5)", () => {
     fnSetSize(5);
     currTool = { type: "line", size: currentLineWidth };
     currToolPreview = new PreviewLineCommand(currentLineWidth); // abstract execute() in redraw
 });
 
+// Function to create an emoji stamp button.
 function createEmojiStampButton(emoji: string){
-    const emojiStampButton = document.createElement("button");
-    emojiStampButton.textContent = emoji;
-    emojiStampButton.addEventListener("click", () => {
+    const emojiStampButton = createButtonWithText(emoji, () => {
         currTool = { type: "stamp", size: 50, symbol: emoji };
         currToolPreview = new PreviewStampCommand(50, 0, emoji);
     });
@@ -324,8 +320,24 @@ app.append(thinMarkerButton);
 app.append(thickMarkerButton);
 
 app.append(document.createElement("br"));
+// add the stamp create button
+const createCustomStampButton = document.createElement("button");
+createCustomStampButton.textContent = "Create Stamp";
+createCustomStampButton.addEventListener("click", () => {
+    const customStamp = prompt("Enter a custom stamp:");
+    if (customStamp) {
+        stampsArray.push(customStamp);
+        app.append(createEmojiStampButton(customStamp));
+    }
+});
+app.append(createCustomStampButton);
+
+app.append(document.createElement("br"));
 stampsArray.forEach((emoji) => {
     app.append(createEmojiStampButton(emoji));
   }
 );
 
+fnSetSize(1);
+currTool = { type: "line", size: currentLineWidth };
+currToolPreview = new PreviewLineCommand(currentLineWidth);
