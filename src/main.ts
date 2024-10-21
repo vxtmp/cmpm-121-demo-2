@@ -202,7 +202,10 @@ function addCanvas(width: number, height: number): HTMLCanvasElement {
 }
 
 // globals.
-const canvas = addCanvas(256, 256)!;
+const CANVAS_WIDTH = 600;
+const CANVAS_HEIGHT = 400;
+const SAVE_SCALE = 2;
+const canvas = addCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)!;
 const ctx = canvas.getContext("2d")!;
 let currentLineWidth = 1;
 let currDrawableBuffer: Drawable = new Line(currentLineWidth);
@@ -313,7 +316,23 @@ function createEmojiStampButton(emoji: string){
 app.append(document.createElement("br"));
 app.append(clearButton);
 app.append(undoButton);             
-app.append(redoButton);                  
+app.append(redoButton);        
+
+// create an export button that creates an upscaled canvas temporarily
+const exportButton = createButtonWithText("Export", () => {
+    const exportCanvas = addCanvas(CANVAS_WIDTH * SAVE_SCALE, CANVAS_HEIGHT * SAVE_SCALE);
+    const exportCtx = exportCanvas.getContext("2d")!;
+    // scale the drawing size
+    exportCtx.scale(SAVE_SCALE, SAVE_SCALE);
+    drawManager.redraw(exportCtx);
+    const dataUrl = exportCanvas.toDataURL();
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "sketch.png";
+    a.click();
+    exportCanvas.remove();
+});
+app.append(exportButton);          
 
 app.append(document.createElement("br")); 
 app.append(thinMarkerButton);
@@ -330,28 +349,12 @@ const createCustomStampButton = createButtonWithText("Create Stamp", () => {
 });
 app.append(createCustomStampButton);
 
+
 app.append(document.createElement("br"));
 stampsArray.forEach((emoji) => {
     app.append(createEmojiStampButton(emoji));
   }
 );
-
-app.append(document.createElement("br"));
-// create an export button that creates a 1024x1024 canvas temporarily
-const exportButton = createButtonWithText("Export", () => {
-    const exportCanvas = addCanvas(1024, 1024);
-    const exportCtx = exportCanvas.getContext("2d")!;
-    // scale the drawing size by 4x so that existing commands appear at 4x size
-    exportCtx.scale(4, 4);
-    drawManager.redraw(exportCtx);
-    const dataUrl = exportCanvas.toDataURL();
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = "sketch.png";
-    a.click();
-    exportCanvas.remove();
-});
-app.append(exportButton);
 
 fnSetSize(1);
 currTool = { type: "line", size: currentLineWidth };
