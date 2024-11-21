@@ -1,6 +1,6 @@
 import "./style.css";
 
-const APP_NAME = "Sketchpad App";
+const APP_NAME = "Shiny Sketches";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 document.title = APP_NAME;
